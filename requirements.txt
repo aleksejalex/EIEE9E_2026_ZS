@@ -1,0 +1,6 @@
+# Used only by the GitHub Action that builds the in-browser JupyterLab
+# (.github/workflows/deploy.yml). Students don't need to install anything.
+jupyterlite-core==0.8.6
+jupyterlite-pyodide-kernel==0.8.6
+jupyterlab~=4.6.0
+notebook~=7.6.0
