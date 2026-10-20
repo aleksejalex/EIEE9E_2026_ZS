@@ -1,0 +1,60 @@
+# Builds an in-browser JupyterLab (JupyterLite) with all notebooks of this repo
+# and publishes it on GitHub Pages. Runs on GitHub's servers after every push to main.
+# Result: https://<user>.github.io/<repo>/lab/index.html
+name: Build and deploy JupyterLite
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # allows a manual re-run from the Actions tab
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install JupyterLite
+        run: python -m pip install -r requirements.txt
+
+      - name: Collect files for students
+        # every file tracked in the repo, except the build machinery itself
+        run: |
+          mkdir _content
+          git archive HEAD | tar -x -C _content
+          rm -rf _content/.github _content/.gitignore _content/requirements.txt
+
+      - name: Build the JupyterLite site
+        run: jupyter lite build --contents _content --output-dir dist
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
